@@ -1,5 +1,5 @@
 import tkinter as tk
-from utils import clean_round, print_matrix_step
+from utils import clean_round, print_matrix_step, print_matrix_equation
 
 def gaussian_elimination(A, b, output, reduced=False, var_names=None):
     n = len(A); m = len(A[0])
@@ -7,6 +7,7 @@ def gaussian_elimination(A, b, output, reduced=False, var_names=None):
     if var_names is None:
         var_names = [f"x{i+1}" for i in range(m)]
 
+    print_matrix_equation(A, b, output, var_names)
     print_matrix_step(aug, "Startmatrix (udvidet)", output, var_names)
 
     step = 1; row = 0

@@ -26,3 +26,15 @@ def parse_inputs(entries):
         return A, b
     except ValueError:
         return None, None
+
+def print_matrix_equation(A, b, output, var_names=None):
+    output.insert(tk.END, "Matrixform (A·x = b):\n\n")
+    rows = len(A); cols = len(A[0]) if A else 0
+    if var_names is None:
+        var_names = [f"x{i+1}" for i in range(cols)]
+    for i in range(max(rows, cols)):
+        A_row = "[" + "  ".join(f"{clean_round(x,2):>6}" for x in A[i]) + " ]" if i < rows else ""
+        x_row = f"[ {var_names[i]:^6} ]" if i < cols else ""
+        b_row = f"   =   [ {clean_round(b[i],2):>6} ]" if i < rows else ""
+        output.insert(tk.END, f"{A_row}   {x_row}{b_row}\n")
+    output.insert(tk.END, "\n")
