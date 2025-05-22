@@ -1,3 +1,4 @@
+from latex_utils import copy_latex_format
 import tkinter as tk
 from tkinter import ttk, messagebox
 from utils import parse_inputs
@@ -48,6 +49,7 @@ def create_gui():
     ttk.Button(left, text="Opdater Matrix", command=update_entries).pack(pady=5)
     matrix_frame = ttk.Frame(left); matrix_frame.pack()
     ttk.Button(left, text="Beregn", command=solve).pack(pady=10)
+    ttk.Button(left, text="LaTeX Format", command=lambda: copy_latex_format(output)).pack(pady=5)
 
     right = ttk.Frame(root)
     right.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
