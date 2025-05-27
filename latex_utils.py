@@ -13,6 +13,8 @@ def copy_latex_format(text_widget):
         
         i = 0
         found_matrix_equation = False
+        var_names = None
+        solutions_seen = set()
         
         while i < len(lines):
             line = lines[i]
@@ -22,40 +24,91 @@ def copy_latex_format(text_widget):
                 latex_output += f"\\text{{{line.strip()}}}\n"
                 i += 1
                 
-                # Fortolk den viste matrixligning
-                A_matrix, b_vector, var_count = parse_displayed_matrix_equation(lines, i)
-                if A_matrix and b_vector:
-                    latex_output += create_proper_matrix_equation_latex(A_matrix, b_vector, var_count) + "\n"
-                    found_matrix_equation = True
-                
-                # Spring over matrixligningens linjer
-                while i < len(lines) and (line.strip() == "" or ("[" in line and "]" in line and "=" in line)):
+                # Find første matrix efter dette
+                while i < len(lines) and not lines[i].strip().startswith('R1:'):
                     i += 1
+                
+                if i < len(lines):
+                    matrix_rows = []
+                    while i < len(lines) and lines[i].strip().startswith('R'):
+                        row = lines[i].strip()
+                        if ':' in row:
+                            row = row.split(':', 1)[1].strip()
+                        matrix_rows.append(row)
+                        i += 1
+                    
+                    if matrix_rows:
+                        # del hver row ind i coefficients og RHS
+                        A_matrix = []
+                        b_vector = []
+                        for row in matrix_rows:
+                            nums = [float(x) for x in row.split()]
+                            A_matrix.append(nums[:-1])  
+                            b_vector.append(nums[-1])   
+                        
+                        # Lav variabel navne
+                        var_count = len(A_matrix[0])
+                        var_names = ['x', 'y', 'z'][:var_count] 
+                        if var_count > 3:
+                            var_names.extend([f'x_{i+4}' for i in range(var_count - 3)])
+                        
+                        # Create matrix equation
+                        A_latex = create_matrix_latex_content(A_matrix)
+                        
+                        # Lav x vector med \\ for sidste variable
+                        x_latex_rows = []
+                        for var in var_names:
+                            x_latex_rows.append(var)
+                        x_matrix_content = "\\\\".join(x_latex_rows) + "\\\\"
+                        x_latex = f"\\matrix{{{x_matrix_content}}}"
+                        
+                        # lav b vector med \\ til sidste nummer
+                        b_latex_rows = []
+                        for b in b_vector:
+                            if float(b).is_integer():
+                                b_latex_rows.append(str(int(b)))
+                            else:
+                                b_latex_rows.append(str(float(b)))
+                        b_matrix_content = "\\\\".join(b_latex_rows) + "\\\\"
+                        b_latex = f"\\matrix{{{b_matrix_content}}}"
+                        
+                        # fortsæt med ligningen
+                        latex_output += f"\\left[\\matrix{{{A_latex}}}\\right] \\times \\left[{x_latex}\\right] = \\left[{b_latex}\\right]\n"
                 continue
             
             # Tjek for trinbeskrivelser
             elif line.strip().startswith('Trin') or 'Startmatrix' in line or 'Slutmatrix' in line:
                 latex_output += f"\\text{{{line.strip()}}}\n"
                 i += 1
+                
+                if i < len(lines) and any(var in lines[i] for var in ['x', 'y', 'z', 'RHS']):
+                    i += 1
+    
+                matrix_rows = []
+                while i < len(lines) and lines[i].strip().startswith('R'):
+                    row = lines[i].strip()
+                    if ':' in row:
+                        row = row.split(':', 1)[1].strip()
+                    matrix_rows.append(row)
+                    i += 1
+                
+                if matrix_rows:
+                    latex_output += create_augmented_matrix_latex(matrix_rows) + "\n"
                 continue
             
-            # Tjek for matrixdata
-            elif '[' in line and any(char.isdigit() or char in '.-' for char in line) and ',' in line:
-                matrix_rows = []
-                j = i
-                while j < len(lines) and '[' in lines[j] and ',' in lines[j]:
-                    matrix_rows.append(lines[j])
-                    j += 1
-                
-                if len(matrix_rows) > 1:
-                    latex_output += create_augmented_matrix_latex(matrix_rows) + "\n"
-                    i = j
-                    continue
-            
             # Tjek for løsningsvariable
-            elif line.strip().startswith('x') and '=' in line:
-                solution = line.strip().replace('x', 'x_')
-                latex_output += f"{solution}\n"
+            elif line.strip() and '=' in line and not line.strip().startswith('Matrixform'):
+                solution = line.strip()
+                if var_names:
+                    # Find hvilket variabelnavn der matcher starten af linjen
+                    for var in var_names:
+                        if solution.startswith(var + ' ='):
+                            # spring over hvis vi allerede har set løsningen
+                            if var in solutions_seen:
+                                break
+                            solutions_seen.add(var)
+                            latex_output += f"{solution}\n"
+                            break
                 i += 1
                 continue
             
@@ -78,138 +131,6 @@ def copy_latex_format(text_widget):
     except Exception as e:
         messagebox.showerror("Fejl", f"LaTeX fejl: {str(e)}")
 
-def parse_displayed_matrix_equation(lines, start_idx):
-    """
-    Fortolker den viste matrixligningsformat for at udtrække A, x og b komponenter.
-    Håndterer række-for-række format: [A_række] [x_i] = [b_i]
-    """
-    A_matrix = []
-    b_vector = []
-    var_count = 0
-    
-    i = start_idx
-    
-    # Spring over tomme linjer
-    while i < len(lines) and lines[i].strip() == "":
-        i += 1
-    
-    # Fortolk matrixligningens linjer
-    while i < len(lines):
-        line = lines[i]
-        
-        # Kig efter linjer med matrixformat: [A] [x] = [b]
-        if '[' in line and ']' in line and '=' in line and any(char.isdigit() or char in '.-' for char in line):
-            parts = line.split('=')
-            if len(parts) == 2:
-                left_part = parts[0].strip()
-                right_part = parts[1].strip()
-                
-                # Udtræk A matrix række
-                a_start = left_part.find('[')
-                a_end = left_part.find(']', a_start)
-                if a_start != -1 and a_end != -1:
-                    a_content = left_part[a_start+1:a_end].strip()
-                    try:
-                        a_row = [float(x) for x in a_content.split()]
-                        A_matrix.append(a_row)
-                        
-                        if var_count == 0:
-                            var_count = len(a_row)
-                    except ValueError:
-                        break
-                
-                # Udtræk b vektor element
-                b_start = right_part.find('[')
-                b_end = right_part.find(']', b_start)
-                if b_start != -1 and b_end != -1:
-                    b_content = right_part[b_start+1:b_end].strip()
-                    if b_content and b_content != '?':  
-                        try:
-                            b_value = float(b_content)
-                            b_vector.append(b_value)
-                        except ValueError:
-                            pass
-        else:
-            break
-        
-        i += 1
-    
-    return A_matrix, b_vector, var_count
-
-def create_proper_matrix_equation_latex(A_matrix, b_vector, var_count):
-    """
-    Opretter matrixligningen [A] × [x] = [b] med korrekt formatering.
-    """
-    # Opret A matrix LaTeX
-    A_latex = create_matrix_latex_content(A_matrix)
-    
-    # Opret x vektor LaTeX
-    num_variables = len(A_matrix[0]) if A_matrix else var_count
-    x_latex_rows = []
-    for i in range(num_variables):
-        x_latex_rows.append(f"x_{{{i+1}}}")
-    x_matrix_content = " \\\\ ".join(x_latex_rows) + " \\\\"  
-    x_latex = f"\\matrix{{{x_matrix_content}}}"
-    
-    # Opret b vektor LaTeX
-    b_latex_rows = []
-    for b in b_vector:
-        if isinstance(b, float) and b.is_integer():
-            b_latex_rows.append(str(int(b)))
-        elif '.' in str(b) and str(b).endswith('.0'):
-            b_latex_rows.append(str(b)[:-2])
-        else:
-            rounded_b = round(float(b), 4)
-            if rounded_b == int(rounded_b):
-                b_latex_rows.append(str(int(rounded_b)))
-            else:
-                b_latex_rows.append(str(rounded_b))
-    b_matrix_content = " \\\\ ".join(b_latex_rows) + " \\\\"  
-    b_latex = f"\\matrix{{{b_matrix_content}}}"
-    
-    # Kombiner til ligning
-    equation = f"\\left[{A_latex}\\right] \\times \\left[{x_latex}\\right] = \\left[{b_latex}\\right]"
-    
-    return equation
-
-def create_augmented_matrix_latex(matrix_rows):
-    """
-    Opretter LaTeX for udvidede matricer uden \\vline (Word understøtter det ikke).
-    """
-    if not matrix_rows:
-        return ""
-    
-    # Fortolk matrixrækkerne
-    parsed_rows = []
-    for row in matrix_rows:
-        # Remove brackets and commas
-        row_clean = row.replace('[', '').replace(']', '').replace(',', '')
-        numbers = row_clean.split()
-        parsed_rows.append(numbers)
-    
-    if not parsed_rows:
-        return ""
-    
-    # Opret LaTeX format
-    latex_rows = []
-    for row in parsed_rows:
-        # Formater tal
-        formatted_nums = []
-        for num in row:
-            if '.' in str(num) and str(num).endswith('.0'):
-                formatted_nums.append(str(num)[:-2])
-            else:
-                formatted_nums.append(str(num))
-        
-        # Sammenføj med &
-        row_str = " & ".join(formatted_nums)
-        latex_rows.append(row_str)
-    
-    # Kombiner rækker
-    matrix_content = " \\\\ ".join(latex_rows)
-    
-    return f"\\left[\\matrix{{{matrix_content}}}\\right]"
-
 def create_matrix_latex_content(matrix_data):
     """
     Opretter matrixindhold ved hjælp af Words LaTeX-syntaks.
@@ -231,10 +152,51 @@ def create_matrix_latex_content(matrix_data):
                 else:
                     formatted_nums.append(str(rounded_num))
         
-        row_str = " & ".join(formatted_nums)
+        # Join with & between elements
+        row_str = "&".join(formatted_nums)
         latex_rows.append(row_str)
     
-    # Kombiner med korrekt matrixformatering
-    matrix_content = " \\\\ ".join(latex_rows) + " \\\\"
+    # Join with \\ without extra \\ at the end
+    return "\\\\".join(latex_rows)
+
+def create_augmented_matrix_latex(matrix_rows):
+    """
+    Opretter LaTeX for udvidede matricer uden \\vline (Word understøtter det ikke).
+    """
+    if not matrix_rows:
+        return ""
     
-    return f"\\matrix{{{matrix_content}}}"
+    # Fortolk matrixrækkerne
+    parsed_rows = []
+    for row in matrix_rows:
+        # Split on whitespace and filtrer ud tomme strings
+        numbers = [x for x in row.split() if x.strip()]
+        if numbers:
+            parsed_rows.append(numbers)
+    
+    if not parsed_rows:
+        return ""
+    
+    # Opret LaTeX format
+    latex_rows = []
+    for row in parsed_rows:
+        # Formater tal
+        formatted_nums = []
+        for num in row:
+            try:
+                value = float(num)
+                if value.is_integer():
+                    formatted_nums.append(str(int(value)))
+                else:
+                    formatted_nums.append(f"{value:.4f}".rstrip('0').rstrip('.'))
+            except ValueError:
+                formatted_nums.append(num)
+        
+        # Join with & between elements
+        row_str = "&".join(formatted_nums)
+        latex_rows.append(row_str)
+    
+    # Join with \\ without extra \\ at the end
+    matrix_content = "\\\\".join(latex_rows)
+    
+    return f"\\left[\\matrix{{{matrix_content}}}\\right]"

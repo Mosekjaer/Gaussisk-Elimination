@@ -26,9 +26,9 @@ def print_matrix_equation(A, b, output, var_names=None):
     if var_names is None:
         var_names = [f"x{i+1}" for i in range(cols)]
 
-    for i in range(rows):
+    for i in range(rows): 
         A_row = "[" + " ".join(f"{clean_round(x, 2):>5}" for x in A[i]) + "]"
-        x_row = f"[{var_names[i]}]" if i < len(var_names) else "[?]"
+        x_row = f"[{var_names[i if i < cols else -1]}]"
         
         if i < b_len:
             b_row = f"[{clean_round(b[i], 2):>5}]"
@@ -37,8 +37,6 @@ def print_matrix_equation(A, b, output, var_names=None):
         
         line = f"{A_row}   {x_row}   =   {b_row}"
         output.insert(tk.END, line + "\n")
-
-    output.insert(tk.END, "\n")
 
 def print_matrix_step(matrix, step_description, output, var_names=None):
     """
