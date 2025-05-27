@@ -140,7 +140,7 @@ def create_gui():
     # Opret hovedvindue
     root = tk.Tk()
     root.title("Gaussisk Elimination")
-    root.geometry("650x700")    
+    root.geometry("650x750")    
 
     entries = {}
 
