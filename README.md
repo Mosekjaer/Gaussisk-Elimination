@@ -17,6 +17,8 @@ Ja, det er lavet til **LMEK-forberedelse (Forår 2025, Aarhus Universitet)**, me
 - Vælg mellem REF og RREF  
 - Se ALLE udregningstrin 
 - Fejlhåndtering 
+- Valgfrie variabel navne
+- Tager rå ligninger som input og sætter dem selv på standardform
 
 ---
 

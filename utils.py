@@ -7,17 +7,15 @@ def clean_round(value, ndigits=4):
     r = round(value, ndigits)
     return 0.0 if abs(r) < 1e-12 else r
 
-def print_matrix_equation(A, b, output):
+def print_matrix_equation(A, b, output, var_names=None):
     """
     Viser matrix-ligningen A·x = b i et læsbart format.
-
-    A er en matrix med koefficienter, b er resultatkolonnen.
-    Udskriften sendes til et tekstfelt (output), f.eks. en Tkinter Text-boks.
 
     Args:
         A (list of lists): Koefficientmatrix, f.eks. [[2, 3], [1, -1]]
         b (list): Resultatvektor, f.eks. [5, 1]
         output (tk.Text): Tkinter tekstfelt, hvor matrixen skal vises
+        var_names (list): Liste af variabelnavne. Hvis None bruges x1, x2, osv.
     """
     output.insert(tk.END, "Matrixform (A·x = b):\n\n")
 
@@ -25,9 +23,12 @@ def print_matrix_equation(A, b, output):
     cols = len(A[0]) if A else 0
     b_len = len(b)
 
+    if var_names is None:
+        var_names = [f"x{i+1}" for i in range(cols)]
+
     for i in range(rows):
         A_row = "[" + " ".join(f"{clean_round(x, 2):>5}" for x in A[i]) + "]"
-        x_row = f"[x{i+1}]"
+        x_row = f"[{var_names[i]}]" if i < len(var_names) else "[?]"
         
         if i < b_len:
             b_row = f"[{clean_round(b[i], 2):>5}]"
@@ -39,13 +40,20 @@ def print_matrix_equation(A, b, output):
 
     output.insert(tk.END, "\n")
 
-def print_matrix_step(matrix, step_description, output):
+def print_matrix_step(matrix, step_description, output, var_names=None):
     """
     Viser en matrix med en beskrivelse af trinnet.
     """
     output.insert(tk.END, f"\n{step_description}:\n")
-    for row in matrix:
-        output.insert(tk.END, f"{[clean_round(x, 6) for x in row]}\n")
+    
+    if var_names:
+        # Vis variabelnavne som kolonneoverskrifter
+        header = "    " + "".join(f"{name:>8}" for name in var_names) + "     RHS"
+        output.insert(tk.END, header + "\n")
+        
+    for i, row in enumerate(matrix):
+        formatted_row = [f"{clean_round(x, 6):>8}" for x in row]
+        output.insert(tk.END, f"R{i+1}: " + "".join(formatted_row) + "\n")
     output.insert(tk.END, "\n")
 
 def parse_inputs(entries):

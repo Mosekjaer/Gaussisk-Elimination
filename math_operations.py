@@ -1,7 +1,7 @@
 import tkinter as tk
 from utils import clean_round, print_matrix_equation, print_matrix_step
 
-def back_substitution(ref_matrix, output):
+def back_substitution(ref_matrix, output, var_names=None):
     """
     Løser et lineært ligningssystem ved hjælp af baglæns substitution
     på en matrix i række-echelon-form.
@@ -9,6 +9,7 @@ def back_substitution(ref_matrix, output):
     Args:
         ref_matrix (list of lists): Den udvidede matrix (A|b) i REF.
         output (tk.Text): Tkinter tekstfelt hvor beregningerne vises.
+        var_names (list): Liste af variabelnavne. Hvis None bruges x1, x2, osv.
 
     Returns:
         list: Løsningerne x1, x2, ..., som en liste af tal.
@@ -16,6 +17,9 @@ def back_substitution(ref_matrix, output):
     n = len(ref_matrix)
     m = len(ref_matrix[0]) - 1
     x = [0] * m
+
+    if var_names is None:
+        var_names = [f"x{i+1}" for i in range(m)]
 
     output.insert(tk.END, "\nBaglæns substitution:\n\n")
 
@@ -34,7 +38,7 @@ def back_substitution(ref_matrix, output):
             term_coeff = clean_round(row[j], 4)
             if abs(term_coeff) > 1e-12:
                 sign = " - " if term_coeff < 0 else " + "
-                symbol_terms.append(f"{sign}{abs(term_coeff)} * x{j+1}")
+                symbol_terms.append(f"{sign}{abs(term_coeff)} * {var_names[j]}")
                 value_terms.append(f"{sign}{abs(term_coeff)} * {clean_round(x[j], 4)}")
 
         if symbol_terms:
@@ -49,39 +53,41 @@ def back_substitution(ref_matrix, output):
 
         if abs(coeff - 1.0) < 1e-12:
             if not symbol_terms:
-                output.insert(tk.END, f"x{pivot_col+1} = {clean_round(x_val, 4)}\n")
+                output.insert(tk.END, f"{var_names[pivot_col]} = {clean_round(x_val, 4)}\n")
             elif expr_symbol == expr_value:
-                output.insert(tk.END, f"x{pivot_col+1} = {expr_value} = {clean_round(x_val, 4)}\n")
+                output.insert(tk.END, f"{var_names[pivot_col]} = {expr_value} = {clean_round(x_val, 4)}\n")
             else:
-                output.insert(tk.END, f"x{pivot_col+1} = {expr_symbol} = {expr_value} = {clean_round(x_val, 4)}\n")
+                output.insert(tk.END, f"{var_names[pivot_col]} = {expr_symbol} = {expr_value} = {clean_round(x_val, 4)}\n")
         else:
             if not symbol_terms:
-                output.insert(tk.END, f"x{pivot_col+1} = {clean_round(rhs, 4)} / {clean_round(coeff, 4)} = {clean_round(x_val, 4)}\n")
+                output.insert(tk.END, f"{var_names[pivot_col]} = {clean_round(rhs, 4)} / {clean_round(coeff, 4)} = {clean_round(x_val, 4)}\n")
             else:
-                output.insert(tk.END, f"x{pivot_col+1} = ({expr_symbol}) / {clean_round(coeff, 4)} = ({expr_value}) / {clean_round(coeff, 4)} = {clean_round(x_val, 4)}\n")
+                output.insert(tk.END, f"{var_names[pivot_col]} = ({expr_symbol}) / {clean_round(coeff, 4)} = ({expr_value}) / {clean_round(coeff, 4)} = {clean_round(x_val, 4)}\n")
 
     return x
 
-def gaussian_elimination(A, b, output, reduced=False):
+def gaussian_elimination(A, b, output, reduced=False, var_names=None):
     """
     Udfører Gaussisk elimination på matrix A og vektor b.
     Understøtter både almindelig række-echelon-form (REF)
     og reduceret form (RREF) afhængigt af 'reduced'-parameteren.
-
-    Viser hvert trin i processen og konkluderer med løsningstype.
 
     Args:
         A (list of lists): Koefficientmatrix.
         b (list): Resultatvektor.
         output (tk.Text): Tkinter tekstfelt til visning af trinene.
         reduced (bool): Hvis True bruges RREF, ellers kun REF.
+        var_names (list): Liste af variabelnavne. Hvis None bruges x1, x2, osv.
     """
     n = len(A)
     m = len(A[0])
     aug = [A[i] + [b[i]] for i in range(n)]
 
-    print_matrix_equation(A, b, output)
-    print_matrix_step(aug, "Startmatrix (udvidet)", output)
+    if var_names is None:
+        var_names = [f"x{i+1}" for i in range(m)]
+
+    print_matrix_equation(A, b, output, var_names)
+    print_matrix_step(aug, "Startmatrix (udvidet)", output, var_names)
 
     step = 1
     row = 0
@@ -95,18 +101,16 @@ def gaussian_elimination(A, b, output, reduced=False):
         if pivot_row is None:
             continue
 
-        var_name = f"x{col+1}"
-
         if pivot_row != row:
             aug[row], aug[pivot_row] = aug[pivot_row], aug[row]
-            print_matrix_step(aug, f"Trin {step}: Bytter R{row+1} med R{pivot_row+1} (for at få pivot i {var_name})", output)
+            print_matrix_step(aug, f"Trin {step}: Bytter R{row+1} med R{pivot_row+1} (for at få pivot i {var_names[col]})", output, var_names)
             step += 1
 
         pivot = aug[row][col]
         if abs(pivot - 1.0) > 1e-12:
             factor = clean_round(1 / pivot, 6)
             aug[row] = [x / pivot for x in aug[row]]
-            print_matrix_step(aug, f"Trin {step}: Gør pivot til 1 i {var_name} ved at gange R{row+1} med {factor} (1/{clean_round(pivot, 6)})", output)
+            print_matrix_step(aug, f"Trin {step}: Gør pivot til 1 i {var_names[col]} ved at gange R{row+1} med {factor} (1/{clean_round(pivot, 6)})", output, var_names)
             step += 1
 
         if reduced:
@@ -115,7 +119,7 @@ def gaussian_elimination(A, b, output, reduced=False):
                     factor = aug[r][col]
                     aug[r] = [aug[r][j] - factor * aug[row][j] for j in range(m + 1)]
                     f_str = f"({clean_round(factor, 4)})" if factor < 0 else f"{clean_round(factor, 4)}"
-                    print_matrix_step(aug, f"Trin {step}: Eliminer {var_name} i R{r+1} ved: R{r+1} = R{r+1} - {f_str}·R{row+1}", output)
+                    print_matrix_step(aug, f"Trin {step}: Eliminer {var_names[col]} i R{r+1} ved: R{r+1} = R{r+1} - {f_str}·R{row+1}", output, var_names)
                     step += 1
         else:
             for r in range(row + 1, n):
@@ -123,12 +127,12 @@ def gaussian_elimination(A, b, output, reduced=False):
                     factor = aug[r][col]
                     aug[r] = [aug[r][j] - factor * aug[row][j] for j in range(m + 1)]
                     f_str = f"({clean_round(factor, 4)})" if factor < 0 else f"{clean_round(factor, 4)}"
-                    print_matrix_step(aug, f"Trin {step}: Eliminer {var_name} i R{r+1} ved: R{r+1} = R{r+1} - {f_str}·R{row+1}", output)
+                    print_matrix_step(aug, f"Trin {step}: Eliminer {var_names[col]} i R{r+1} ved: R{r+1} = R{r+1} - {f_str}·R{row+1}", output, var_names)
                     step += 1
 
         row += 1
 
-    print_matrix_step(aug, "Slutmatrix (REF)" if not reduced else "Slutmatrix (RREF)", output)
+    print_matrix_step(aug, "Slutmatrix (REF)" if not reduced else "Slutmatrix (RREF)", output, var_names)
 
     rank = sum(any(abs(cell) > 1e-12 for cell in row[:-1]) for row in aug)
     aug_rank = sum(any(abs(cell) > 1e-12 for cell in row) for row in aug)
@@ -146,9 +150,9 @@ def gaussian_elimination(A, b, output, reduced=False):
                 if leading_col is not None and leading_col < m:
                     x[leading_col] = aug[i][m]
         else:
-            x = back_substitution(aug, output)
+            x = back_substitution(aug, output, var_names)
 
         for i, val in enumerate(x):
-            output.insert(tk.END, f"x{i+1} = {clean_round(val, 4)}\n")
+            output.insert(tk.END, f"{var_names[i]} = {clean_round(val, 4)}\n")
 
     output.insert(tk.END, "\n---\n© 2025 Fjederik - Mobilepay endelig et spejlæg.\n") 
