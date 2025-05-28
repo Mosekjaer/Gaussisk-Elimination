@@ -14,8 +14,28 @@ def copy_latex_format(text_widget):
         i = 0
         found_matrix_equation = False
         var_names = None
-        solutions_seen = set()
+        solutions = {}
+        equations = []
         
+        while i < len(lines):
+            line = lines[i].strip()
+            if 'RHS' in line:
+                header_parts = line.split()
+                var_names = [name for name in header_parts if name != 'RHS']
+            elif ' = ' in line and not 'Matrixform' in line:
+                parts = line.split(' = ')
+                if len(parts) >= 2:
+                    if parts[0] in (var_names or []):
+                        try:
+                            val = float(parts[-1])
+                            solutions[parts[0]] = val
+                        except ValueError:
+                            pass
+                    if len(parts) > 2 and not line.startswith('Trin'):
+                        equations.append(line)
+            i += 1
+        
+        i = 0  
         while i < len(lines):
             line = lines[i]
             
@@ -46,19 +66,17 @@ def copy_latex_format(text_widget):
                             A_matrix.append(nums[:-1])  
                             b_vector.append(nums[-1])   
                         
-                        # Lav variabel navne
-                        var_count = len(A_matrix[0])
-                        var_names = ['x', 'y', 'z'][:var_count] 
-                        if var_count > 3:
-                            var_names.extend([f'x_{i+4}' for i in range(var_count - 3)])
-                        
                         # Create matrix equation
                         A_latex = create_matrix_latex_content(A_matrix)
                         
                         # Lav x vector med \\ for sidste variable
                         x_latex_rows = []
-                        for var in var_names:
-                            x_latex_rows.append(var)
+                        if var_names:
+                            for var in var_names:
+                                x_latex_rows.append(var)
+                        else:
+                            for j in range(len(A_matrix[0])):
+                                x_latex_rows.append(f"x_{j+1}")
                         x_matrix_content = "\\\\".join(x_latex_rows) + "\\\\"
                         x_latex = f"\\matrix{{{x_matrix_content}}}"
                         
@@ -96,25 +114,17 @@ def copy_latex_format(text_widget):
                     latex_output += create_augmented_matrix_latex(matrix_rows) + "\n"
                 continue
             
-            # Tjek for løsningsvariable
-            elif line.strip() and '=' in line and not line.strip().startswith('Matrixform'):
-                solution = line.strip()
-                if var_names:
-                    # Find hvilket variabelnavn der matcher starten af linjen
-                    for var in var_names:
-                        if solution.startswith(var + ' ='):
-                            # spring over hvis vi allerede har set løsningen
-                            if var in solutions_seen:
-                                break
-                            solutions_seen.add(var)
-                            latex_output += f"{solution}\n"
-                            break
-                i += 1
-                continue
-            
-            # Tjek for systembeskrivelser
+            # Tjek for systembeskrivelser og løsninger
             elif line.strip().startswith('Systemet har'):
                 latex_output += f"\\text{{{line.strip()}}}\n"
+                if solutions and var_names: 
+                    latex_output += "\\text{Baglæns substitution:}\n"
+                    for eq in equations:
+                        latex_output += f"\\text{{{eq}}}\n"
+                    latex_output += "\n"
+                    for var in var_names:
+                        if var in solutions:
+                            latex_output += f"\\text{{{var} = {solutions[var]}}}\n"
                 i += 1
                 continue
             

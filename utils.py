@@ -27,16 +27,18 @@ def print_matrix_equation(A, b, output, var_names=None):
         var_names = [f"x{i+1}" for i in range(cols)]
 
     for i in range(rows): 
-        A_row = "[" + " ".join(f"{clean_round(x, 2):>5}" for x in A[i]) + "]"
-        x_row = f"[{var_names[i if i < cols else -1]}]"
+        A_row = "[" + "  ".join(f"{clean_round(x, 2):>6}" for x in A[i]) + " ]"
+        x_row = f"[ {var_names[i if i < cols else -1]:^6} ]"
         
         if i < b_len:
-            b_row = f"[{clean_round(b[i], 2):>5}]"
+            b_row = f"[ {clean_round(b[i], 2):>6} ]"
         else:
-            b_row = "[  ?  ]"  
+            b_row = "[   ?   ]"  
         
         line = f"{A_row}   {x_row}   =   {b_row}"
         output.insert(tk.END, line + "\n")
+    
+    output.insert(tk.END, "\n")
 
 def print_matrix_step(matrix, step_description, output, var_names=None):
     """
@@ -46,12 +48,19 @@ def print_matrix_step(matrix, step_description, output, var_names=None):
     
     if var_names:
         # Vis variabelnavne som kolonneoverskrifter
-        header = "    " + "".join(f"{name:>8}" for name in var_names) + "     RHS"
+        header = "    " + "".join(f"{name:>10}" for name in var_names) + "     RHS"
         output.insert(tk.END, header + "\n")
         
     for i, row in enumerate(matrix):
-        formatted_row = [f"{clean_round(x, 6):>8}" for x in row]
-        output.insert(tk.END, f"R{i+1}: " + "".join(formatted_row) + "\n")
+        formatted_row = []
+        for x in row[:-1]: 
+            val = clean_round(x, 6)
+            formatted_row.append(f"{val:>10}")
+        
+        rhs = clean_round(row[-1], 6)
+        formatted_row.append(f"{rhs:>10}")
+        
+        output.insert(tk.END, f"R{i+1}: " + "  ".join(formatted_row) + "\n")
     output.insert(tk.END, "\n")
 
 def parse_inputs(entries):
