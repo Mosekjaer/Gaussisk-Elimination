@@ -1,3 +1,4 @@
+# LaTeX formatting utilities for Word equation editor
 import pyperclip
 from tkinter import messagebox
 
