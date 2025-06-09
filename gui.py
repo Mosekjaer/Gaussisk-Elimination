@@ -347,4 +347,6 @@ def create_gui():
     root.minsize(1000, 700)
     
     # Start GUI
+    root.update()
+    root.minsize(1000, 700)
     root.mainloop() 
