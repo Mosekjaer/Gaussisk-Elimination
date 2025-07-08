@@ -1,7 +1,4 @@
-__pycache__/
-*.pyc
-*.pyo
-dist/
-build/
-*.spec
-.venv/
+node_modules
+build
+.react-router
+.env
