@@ -6,3 +6,5 @@ export default function Home() {
     </div>
   );
 }
+
+// TODO: will wire up solve button here
