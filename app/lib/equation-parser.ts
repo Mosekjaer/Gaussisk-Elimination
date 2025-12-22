@@ -65,7 +65,7 @@ export function parseRawEquations(equations: string[]): ParseResult {
     .filter((eq) => eq && !eq.startsWith("#"));
 
   if (filtered.length === 0) {
-    throw new Error("Ingen ligninger fundet.");
+    throw new Error("Ingen gyldige ligninger fundet. Brug formatet: 3x + 2y = 5");
   }
 
   // Collect all variable names
