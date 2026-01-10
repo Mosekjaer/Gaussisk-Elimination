@@ -323,7 +323,7 @@ export default function Home() {
           </div>
 
           {/* Right panel - Results */}
-          <Card className="min-h-[500px]">
+          <Card className="min-h-[400px] lg:min-h-[500px]">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Resultater</CardTitle>
             </CardHeader>
