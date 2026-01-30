@@ -51,7 +51,7 @@ function MatrixDisplay({
               {row.map((val, j) => (
                 <td
                   key={j}
-                  className={`px-2 py-0.5 text-right tabular-nums ${
+                  className={`px-2 py-0.5 text-right tabular-nums whitespace-nowrap ${
                     j === dataColCount && showRHS !== false
                       ? "border-l border-border pl-3"
                       : ""
@@ -90,7 +90,7 @@ function MatrixEquationDisplay({
               {A.map((row, i) => (
                 <tr key={i}>
                   {row.map((val, j) => (
-                    <td key={j} className="px-2 py-0.5 text-right tabular-nums">
+                    <td key={j} className="px-2 py-0.5 text-right tabular-nums whitespace-nowrap">
                       {formatNum(val)}
                     </td>
                   ))}
@@ -123,7 +123,7 @@ function MatrixEquationDisplay({
             <tbody>
               {b.map((val, i) => (
                 <tr key={i}>
-                  <td className="px-2 py-0.5 text-right tabular-nums">
+                  <td className="px-2 py-0.5 text-right tabular-nums whitespace-nowrap">
                     {formatNum(val)}
                   </td>
                 </tr>
