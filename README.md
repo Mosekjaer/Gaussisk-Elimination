@@ -1,76 +1,53 @@
 # LMEK Gaussisk Elimination
 *Din (måske) bedste ven til eksamen i Lineær Matematisk Analyse og Elektriske Kredsløb*
 
-![mind blown brain](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbG1wZTNqdzQ0MTNqN2cyajVhNTE3N2VpdTRueXNodTFtd3ZycXF4bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l41lJ8ywG1ncm9FXW/giphy.gif)
-
 ## Hvad er det her?
 
-Et lille, stille og roligt Tkinter-program, der hjælper dig med at løse lineære ligningssystemer med Gaussisk elimination – uden at du selv skal bøvle med 1'ere, 0'ere og frustrerede brøker. 
+En web-applikation der hjælper dig med at løse lineære ligningssystemer med Gaussisk elimination – uden at du selv skal bøvle med 1'ere, 0'ere og frustrerede brøker.
 
-Ja, det er lavet til **LMEK-forberedelse (Forår 2025, Aarhus Universitet)**, men hey – det virker også udenfor eksamenslokalet.
-
----
+Lavet til **LMEK-forberedelse (Forår 2025, Aarhus Universitet)**, men virker også udenfor eksamenslokalet.
 
 ## Funktioner
 
-- Indtast matrix og højreside uden Mathcad-helvede  
-- Vælg mellem REF og RREF  
-- Se ALLE udregningstrin 
-- Fejlhåndtering 
-- Valgfrie variabel navne
+- Indtast matrix og højreside
 - Tager rå ligninger som input og sætter dem selv på standardform
+- Vælg mellem REF og RREF
+- Se ALLE udregningstrin
+- Valgfrie variabelnavne
+- Kopiér LaTeX til Word's formeleditor
+- Responsivt design – virker på mobil og desktop
 
----
+## Tech Stack
 
-## Sådan starter du det
+- **React Router v7** (Remix)
+- **shadcn/ui** + Tailwind CSS
+- **TypeScript**
+- **Docker** til deployment
 
-### Kør med Python (klassikeren):
-
-```bash
-python main.py
-```
-
-### Lav en .exe uden terminal (til Windows):
-
-```bash
-pyinstaller --onefile --noconsole main.py
-```
-
-### Med et ikon 
+## Kør lokalt
 
 ```bash
-pyinstaller --onefile --noconsole --icon=ikon.ico main.py
+npm install
+npm run dev
 ```
 
-## Hvorfor bruge det?
+## Docker
 
-Fordi:
-- Du har stirret tomt på en matrix før.
-- LMEK giver dig lyst til at ringe til en voksen.
-- Det hjælper faktisk at se hele regneprocessen, især til eksamen og vejlederforsvar.
-- Nogle eksamensopgaver kræver mellemregninger.
+```bash
+docker compose up --build
+```
 
----
+Appen kører på `http://localhost:3000`.
 
-## Eksempel i aktion
+## Deploy med Coolify
 
-### Trin 1: Indtast ligninger og tryk beregn
-
-![alt text](images/image.png)
-
-### Trin 2: Celebrate
-
-![matrix boom](https://media.giphy.com/media/YTbZzCkRQCEJa/giphy.gif)
-
----
+1. Opret nyt projekt i Coolify
+2. Tilslut dit Git repository
+3. Vælg "Docker Compose" som build pack
+4. Deploy
 
 ## Udvikler
 
-**Frederik Pedersen – aka. Fjederik**  
-*Aarhus Universitet – Forår 2025*  
-> _MobilePay endelig et spejlæg_ 🍳
-
-
-## 🍀 Held og lykke til eksamen!
-
----
+**Frederik Pedersen – aka. Fjederik**
+*Aarhus Universitet – Forår 2025*
+> _MobilePay endelig et spejlæg_
