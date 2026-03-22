@@ -1,18 +1,8 @@
 import { useState, useCallback } from "react";
 import type { Route } from "./+types/home";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { Separator } from "~/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { MatrixInput } from "~/components/matrix-input";
 import { EquationInput } from "~/components/equation-input";
@@ -29,8 +19,7 @@ export function meta({}: Route.MetaArgs) {
     { title: "Gaussisk Elimination" },
     {
       name: "description",
-      content:
-        "L\u00f8s line\u00e6re ligningssystemer med Gaussisk elimination - REF og RREF metoder",
+      content: "Løs lineære ligningssystemer med Gaussisk elimination - REF og RREF metoder",
     },
   ];
 }
@@ -54,6 +43,7 @@ export default function Home() {
   const [rawEquations, setRawEquations] = useState("");
   const [result, setResult] = useState<GaussianResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [latexCopied, setLatexCopied] = useState(false);
 
   const varNames = varNamesStr
     .split(",")
@@ -64,8 +54,6 @@ export default function Home() {
     (newRows: number, newCols: number) => {
       setRows(newRows);
       setCols(newCols);
-
-      // Resize matrix
       const newMatrix = createEmptyMatrix(newRows, newCols);
       for (let i = 0; i < Math.min(newRows, matrix.length); i++) {
         for (let j = 0; j < Math.min(newCols, matrix[i]?.length ?? 0); j++) {
@@ -73,20 +61,14 @@ export default function Home() {
         }
       }
       setMatrix(newMatrix);
-
-      // Resize b vector
       const newB = createEmptyVector(newRows);
       for (let i = 0; i < Math.min(newRows, bVector.length); i++) {
         newB[i] = bVector[i];
       }
       setBVector(newB);
-
-      // Update default var names if they match the default pattern
       const defaultNames = Array.from({ length: cols }, (_, i) => `x${i + 1}`).join(", ");
       if (varNamesStr === defaultNames || varNames.length !== newCols) {
-        setVarNamesStr(
-          Array.from({ length: newCols }, (_, i) => `x${i + 1}`).join(", ")
-        );
+        setVarNamesStr(Array.from({ length: newCols }, (_, i) => `x${i + 1}`).join(", "));
       }
     },
     [matrix, bVector, cols, varNamesStr, varNames.length]
@@ -113,39 +95,34 @@ export default function Home() {
 
   const handleSolve = useCallback(() => {
     setError(null);
-
     try {
-      let A: number[][];
+      let A: number[];
       let b: number[];
       let names: string[];
 
       if (inputMode === "matrix") {
-        A = matrix.map((r) => [...r]);
+        A = matrix.map((r) => [...r]) as any;
         b = [...bVector];
-
-        if (varNames.length !== cols) {
-          names = Array.from({ length: cols }, (_, i) => `x${i + 1}`);
-        } else {
-          names = [...varNames];
-        }
+        names =
+          varNames.length === cols
+            ? [...varNames]
+            : Array.from({ length: cols }, (_, i) => `x${i + 1}`);
       } else {
         const equations = rawEquations
           .split("\n")
           .map((s) => s.trim())
           .filter((s) => s && !s.startsWith("#"));
-
         if (equations.length === 0) {
-          setError("Indtast mindst \u00e9n ligning.");
+          setError("Indtast mindst én ligning.");
           return;
         }
-
         const parsed = parseRawEquations(equations);
-        A = parsed.A;
+        A = parsed.A as any;
         b = parsed.b;
         names = parsed.varNames;
       }
 
-      const res = gaussianElimination(A, b, names, method === "rref");
+      const res = gaussianElimination(A as any, b, names, method === "rref");
       setResult(res);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ukendt fejl");
@@ -157,187 +134,203 @@ export default function Home() {
     if (!result) return;
     const latex = generateLatex(result);
     navigator.clipboard.writeText(latex).then(() => {
-      alert(
-        "LaTeX kopieret!\n\nInds\u00e6t i Word's equation editor."
-      );
+      setLatexCopied(true);
+      setTimeout(() => setLatexCopied(false), 2000);
     });
   }, [result]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#fafbfc]">
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Gaussisk Elimination
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Din (m&aring;ske) bedste ven til eksamen i Line&aelig;r Matematisk Analyse
-            og Elektriske Kredsl&oslash;b
-          </p>
+      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+              <span className="text-white text-sm font-bold">G</span>
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-slate-900 leading-tight">
+                Gaussisk Elimination
+              </h1>
+              <p className="text-[11px] text-slate-400 leading-tight hidden sm:block">
+                LMEK &middot; Aarhus Universitet
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left panel - Input */}
-          <div className="space-y-4">
-            {/* Method selection */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Metode</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select
-                  value={method}
-                  onValueChange={(v) => setMethod(v as "ref" | "rref")}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ref">
-                      Row Echelon Form (REF)
-                    </SelectItem>
-                    <SelectItem value="rref">
-                      Reduced Row Echelon Form (RREF)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Left panel */}
+          <div className="lg:col-span-4 space-y-4">
+            {/* Method */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setMethod("ref")}
+                className={`group relative rounded-lg border p-3 text-left transition-all ${
+                  method === "ref"
+                    ? "bg-white border-blue-300 shadow-sm shadow-blue-100/50"
+                    : "bg-white/60 border-slate-200 hover:bg-white hover:border-slate-300"
+                }`}
+              >
+                <div className={`text-xs font-bold tracking-wide ${method === "ref" ? "text-blue-600" : "text-slate-400"}`}>
+                  REF
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                  Row Echelon Form
+                </div>
+                {method === "ref" && (
+                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-blue-500" />
+                )}
+              </button>
+              <button
+                onClick={() => setMethod("rref")}
+                className={`group relative rounded-lg border p-3 text-left transition-all ${
+                  method === "rref"
+                    ? "bg-white border-blue-300 shadow-sm shadow-blue-100/50"
+                    : "bg-white/60 border-slate-200 hover:bg-white hover:border-slate-300"
+                }`}
+              >
+                <div className={`text-xs font-bold tracking-wide ${method === "rref" ? "text-blue-600" : "text-slate-400"}`}>
+                  RREF
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                  Reduced Row Echelon
+                </div>
+                {method === "rref" && (
+                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-blue-500" />
+                )}
+              </button>
+            </div>
 
-            {/* Input mode */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Input</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Tabs
-                  value={inputMode}
-                  onValueChange={(v) => setInputMode(v as "matrix" | "raw")}
-                >
-                  <TabsList className="w-full">
-                    <TabsTrigger value="matrix" className="flex-1">
+            {/* Input card */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+              <Tabs
+                value={inputMode}
+                onValueChange={(v) => setInputMode(v as "matrix" | "raw")}
+              >
+                <div className="px-3 pt-2.5 pb-0">
+                  <TabsList className="bg-slate-100/80 h-8 w-full">
+                    <TabsTrigger
+                      value="matrix"
+                      className="flex-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    >
                       Matrix
                     </TabsTrigger>
-                    <TabsTrigger value="raw" className="flex-1">
-                      R&aring; ligninger
+                    <TabsTrigger
+                      value="raw"
+                      className="flex-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    >
+                      Ligninger
                     </TabsTrigger>
                   </TabsList>
+                </div>
 
-                  <TabsContent value="matrix" className="space-y-4 mt-4">
-                    {/* Dimensions */}
-                    <div className="flex items-end gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs">R&aelig;kker</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={10}
-                          className="w-20"
-                          value={rows}
-                          onChange={(e) => {
-                            const v = parseInt(e.target.value);
-                            if (v > 0 && v <= 10)
-                              updateDimensions(v, cols);
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Kolonner</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={10}
-                          className="w-20"
-                          value={cols}
-                          onChange={(e) => {
-                            const v = parseInt(e.target.value);
-                            if (v > 0 && v <= 10)
-                              updateDimensions(rows, v);
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Variable names */}
-                    <div className="space-y-1">
-                      <Label className="text-xs">
-                        Variable (kommasepareret)
-                      </Label>
-                      <Input
-                        value={varNamesStr}
-                        onChange={(e) => setVarNamesStr(e.target.value)}
-                        placeholder="x1, x2, x3"
-                      />
-                    </div>
-
-                    <Separator />
-
-                    {/* Matrix input */}
-                    <MatrixInput
-                      rows={rows}
-                      cols={cols}
-                      varNames={
-                        varNames.length === cols
-                          ? varNames
-                          : Array.from(
-                              { length: cols },
-                              (_, i) => `x${i + 1}`
-                            )
-                      }
-                      matrix={matrix}
-                      bVector={bVector}
-                      onMatrixChange={handleMatrixChange}
-                      onBChange={handleBChange}
+                <TabsContent value="matrix" className="px-3 pb-3 pt-3 space-y-3 mt-0">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Label className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Dim</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={10}
+                      className="w-12 h-7 text-center text-xs px-1"
+                      value={rows}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value);
+                        if (v > 0 && v <= 10) updateDimensions(v, cols);
+                      }}
                     />
-                  </TabsContent>
-
-                  <TabsContent value="raw" className="mt-4">
-                    <EquationInput
-                      value={rawEquations}
-                      onChange={setRawEquations}
+                    <span className="text-slate-300 text-xs">&times;</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={10}
+                      className="w-12 h-7 text-center text-xs px-1"
+                      value={cols}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value);
+                        if (v > 0 && v <= 10) updateDimensions(rows, v);
+                      }}
                     />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+                    <div className="flex-1" />
+                    <Input
+                      value={varNamesStr}
+                      onChange={(e) => setVarNamesStr(e.target.value)}
+                      placeholder="x, y, z"
+                      className="w-28 h-7 text-xs"
+                    />
+                  </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-3">
-              <Button onClick={handleSolve} className="flex-1">
+                  <MatrixInput
+                    rows={rows}
+                    cols={cols}
+                    varNames={
+                      varNames.length === cols
+                        ? varNames
+                        : Array.from({ length: cols }, (_, i) => `x${i + 1}`)
+                    }
+                    matrix={matrix}
+                    bVector={bVector}
+                    onMatrixChange={handleMatrixChange}
+                    onBChange={handleBChange}
+                  />
+                </TabsContent>
+
+                <TabsContent value="raw" className="px-3 pb-3 pt-3 mt-0">
+                  <EquationInput value={rawEquations} onChange={setRawEquations} />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSolve}
+                className="flex-1 h-9 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-200/50"
+              >
                 Beregn
               </Button>
               <Button
                 variant="outline"
                 onClick={handleCopyLatex}
                 disabled={!result}
+                className="h-9 px-3 text-xs rounded-lg"
               >
-                LaTeX Format
+                {latexCopied ? "Kopieret!" : "Kopier LaTeX"}
               </Button>
             </div>
           </div>
 
-          {/* Right panel - Results */}
-          <Card className="min-h-[400px] lg:min-h-[500px]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Resultater</CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-auto max-h-[calc(100vh-200px)]">
-              {error && (
-                <div className="bg-destructive/10 text-destructive rounded-md p-3 mb-4 text-sm">
-                  {error}
-                </div>
-              )}
-              <ResultDisplay result={result} />
-            </CardContent>
-          </Card>
+          {/* Right panel — Results */}
+          <div className="lg:col-span-8">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col min-h-[400px] lg:max-h-[calc(100vh-130px)]">
+              <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+                <h2 className="text-sm font-semibold text-slate-700">Resultater</h2>
+                {result && (
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">
+                    {method === "ref" ? "REF" : "RREF"} &middot; {result.steps.length} trin
+                  </span>
+                )}
+              </div>
+              <div className="p-5 overflow-y-auto flex-1">
+                {error && (
+                  <div className="bg-red-50 text-red-600 rounded-lg p-3 mb-4 text-sm border border-red-100">
+                    {error}
+                  </div>
+                )}
+                <ResultDisplay result={result} />
+              </div>
+            </div>
+          </div>
         </div>
       </main>
+
+      <footer className="py-6">
+        <p className="text-center text-[11px] text-slate-300">
+          &copy; 2025 Fjederik &middot; Mobilepay endelig et spejl&aelig;g
+        </p>
+      </footer>
     </div>
   );
 }
