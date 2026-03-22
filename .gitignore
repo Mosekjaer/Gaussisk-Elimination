@@ -4,3 +4,4 @@ build
 .env
 .vite/
 .react-router/
+*.png
